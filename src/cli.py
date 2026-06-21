@@ -13,7 +13,7 @@ import click
 from src.parsers.ast_parser import parse_file
 from src.crawlers.repo_walker import walk_repo
 from src.storage.vector_store import store, search
-from src.storage.graph_store import store_nodes, store_edges
+from src.storage.graph_store import store_nodes, store_edges, get_neighbors
 from src.skills.ollama_client import build_prompt, ask_ollama
 
 
@@ -62,8 +62,15 @@ def query(team, question, model):
     for r in results:
         click.echo(f"  - {r['metadata']['name']} (score: {r['score']:.4f})")
 
+    node_ids = [r["node_id"] for r in results]
+    neighbors = get_neighbors(node_ids, team)
+    if neighbors:
+        click.echo(f"Graph expansion: +{len(neighbors)} connected nodes from Neo4j")
+        for n in neighbors:
+            click.echo(f"  - {n['name']} (via {n['relation_type']})")
+
     click.echo("\nAsking Ollama...")
-    prompt = build_prompt(question, results)
+    prompt = build_prompt(question, results, neighbors)
     answer = ask_ollama(prompt, model=model)
 
     click.echo("\n=== ANSWER ===")

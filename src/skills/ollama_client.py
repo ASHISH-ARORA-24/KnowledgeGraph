@@ -9,12 +9,20 @@ import requests
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 
-def build_prompt(question: str, context_nodes: list[dict]) -> str:
-    """Build a RAG prompt by injecting retrieved context nodes around the user's question."""
+def build_prompt(question: str, context_nodes: list[dict], neighbors: list[dict] | None = None) -> str:
+    """Build a RAG prompt from ChromaDB results and optional Neo4j graph neighbors."""
     context_sections = []
+
     for node in context_nodes:
         meta = node["metadata"]
-        section = f"--- {meta['name']} ({meta['type']}) ---\n{node['document']}"
+        section = f"--- {meta['name']} ({meta['type']}) [vector match] ---\n{node['document']}"
+        context_sections.append(section)
+
+    for node in (neighbors or []):
+        section = (
+            f"--- {node['name']} ({node['type']}) [graph neighbor via {node['relation_type']}] ---\n"
+            f"{node['raw_source'] or node['docstring']}"
+        )
         context_sections.append(section)
 
     context_text = "\n\n".join(context_sections)

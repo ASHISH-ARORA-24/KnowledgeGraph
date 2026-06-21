@@ -49,7 +49,9 @@ def runner():
 
 def test_ingest_calls_parse_file_with_correct_args(runner):
     with patch("src.cli.parse_file", return_value=([_sample_node()], [])) as mock_parse, \
-         patch("src.cli.store"):
+         patch("src.cli.store"), \
+         patch("src.cli.store_nodes"), \
+         patch("src.cli.store_edges"):
         runner.invoke(cli, ["ingest", "--team", "team-alpha", "--file", "src/billing.py"])
     mock_parse.assert_called_once_with("src/billing.py", "team-alpha")
 
@@ -57,21 +59,27 @@ def test_ingest_calls_parse_file_with_correct_args(runner):
 def test_ingest_passes_parsed_nodes_to_store(runner):
     nodes = [_sample_node()]
     with patch("src.cli.parse_file", return_value=(nodes, [])), \
-         patch("src.cli.store") as mock_store:
+         patch("src.cli.store") as mock_store, \
+         patch("src.cli.store_nodes"), \
+         patch("src.cli.store_edges"):
         runner.invoke(cli, ["ingest", "--team", "team-alpha", "--file", "src/billing.py"])
     mock_store.assert_called_once_with(nodes, "team-alpha")
 
 
 def test_ingest_passes_team_id_to_store(runner):
     with patch("src.cli.parse_file", return_value=([_sample_node()], [])), \
-         patch("src.cli.store") as mock_store:
+         patch("src.cli.store") as mock_store, \
+         patch("src.cli.store_nodes"), \
+         patch("src.cli.store_edges"):
         runner.invoke(cli, ["ingest", "--team", "team-beta", "--file", "src/billing.py"])
     assert mock_store.call_args.args[1] == "team-beta"
 
 
 def test_ingest_exits_successfully(runner):
     with patch("src.cli.parse_file", return_value=([_sample_node()], [])), \
-         patch("src.cli.store"):
+         patch("src.cli.store"), \
+         patch("src.cli.store_nodes"), \
+         patch("src.cli.store_edges"):
         result = runner.invoke(cli, ["ingest", "--team", "team-alpha", "--file", "src/billing.py"])
     assert result.exit_code == 0
 
@@ -87,6 +95,7 @@ def test_ingest_fails_without_required_args(runner):
 
 def test_query_calls_search_with_question_and_team(runner):
     with patch("src.cli.search", return_value=_sample_search_results()) as mock_search, \
+         patch("src.cli.get_neighbors", return_value=[]), \
          patch("src.cli.build_prompt", return_value="prompt"), \
          patch("src.cli.ask_ollama", return_value="answer"):
         runner.invoke(cli, ["query", "--team", "team-alpha", "--question", "What does foo do?"])
@@ -96,14 +105,16 @@ def test_query_calls_search_with_question_and_team(runner):
 def test_query_passes_search_results_to_build_prompt(runner):
     results = _sample_search_results()
     with patch("src.cli.search", return_value=results), \
+         patch("src.cli.get_neighbors", return_value=[]) as mock_neighbors, \
          patch("src.cli.build_prompt", return_value="prompt") as mock_build, \
          patch("src.cli.ask_ollama", return_value="answer"):
         runner.invoke(cli, ["query", "--team", "team-alpha", "--question", "q?"])
-    mock_build.assert_called_once_with("q?", results)
+    mock_build.assert_called_once_with("q?", results, [])
 
 
 def test_query_passes_built_prompt_to_ask_ollama(runner):
     with patch("src.cli.search", return_value=_sample_search_results()), \
+         patch("src.cli.get_neighbors", return_value=[]), \
          patch("src.cli.build_prompt", return_value="the prompt"), \
          patch("src.cli.ask_ollama", return_value="answer") as mock_ollama:
         runner.invoke(cli, ["query", "--team", "team-alpha", "--question", "q?"])
@@ -112,6 +123,7 @@ def test_query_passes_built_prompt_to_ask_ollama(runner):
 
 def test_query_passes_custom_model_to_ask_ollama(runner):
     with patch("src.cli.search", return_value=_sample_search_results()), \
+         patch("src.cli.get_neighbors", return_value=[]), \
          patch("src.cli.build_prompt", return_value="prompt"), \
          patch("src.cli.ask_ollama", return_value="answer") as mock_ollama:
         runner.invoke(cli, ["query", "--team", "team-alpha", "--question", "q?", "--model", "mistral"])
@@ -120,6 +132,7 @@ def test_query_passes_custom_model_to_ask_ollama(runner):
 
 def test_query_default_model_is_phi(runner):
     with patch("src.cli.search", return_value=_sample_search_results()), \
+         patch("src.cli.get_neighbors", return_value=[]), \
          patch("src.cli.build_prompt", return_value="prompt"), \
          patch("src.cli.ask_ollama", return_value="answer") as mock_ollama:
         runner.invoke(cli, ["query", "--team", "team-alpha", "--question", "q?"])
@@ -128,6 +141,7 @@ def test_query_default_model_is_phi(runner):
 
 def test_query_prints_answer_to_output(runner):
     with patch("src.cli.search", return_value=_sample_search_results()), \
+         patch("src.cli.get_neighbors", return_value=[]), \
          patch("src.cli.build_prompt", return_value="prompt"), \
          patch("src.cli.ask_ollama", return_value="The answer is 42."):
         result = runner.invoke(cli, ["query", "--team", "team-alpha", "--question", "q?"])
@@ -136,6 +150,7 @@ def test_query_prints_answer_to_output(runner):
 
 def test_query_exits_successfully(runner):
     with patch("src.cli.search", return_value=_sample_search_results()), \
+         patch("src.cli.get_neighbors", return_value=[]), \
          patch("src.cli.build_prompt", return_value="prompt"), \
          patch("src.cli.ask_ollama", return_value="answer"):
         result = runner.invoke(cli, ["query", "--team", "team-alpha", "--question", "q?"])

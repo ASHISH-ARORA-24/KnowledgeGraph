@@ -23,8 +23,8 @@
   - [x] Neo4j storage layer (graph_store.py — store_nodes, store_edges)
   - [x] docker-compose.yml with Neo4j container
   - [x] Ingest pipeline writes to both ChromaDB and Neo4j
-  - [ ] Graph-enhanced RAG (get_neighbors, expand query results via graph)
-  - [ ] Impact query CLI command
+  - [x] Graph-enhanced RAG (get_neighbors, expand query results via graph)
+  - [ ] Impact query CLI command (get_impact, impact command)
 
 ---
 

@@ -50,7 +50,7 @@ def test_build_prompt_contains_document_text():
 
 def test_build_prompt_section_header_format():
     prompt = build_prompt("q", [_context_node("my_func", "FUNCTION", "doc")])
-    assert "--- my_func (FUNCTION) ---" in prompt
+    assert "--- my_func (FUNCTION) [vector match] ---" in prompt
 
 
 def test_build_prompt_contains_context_label():

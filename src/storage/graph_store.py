@@ -41,6 +41,23 @@ def store_edges(edges: list[Edge]) -> None:
         session.execute_write(_write_edges, edges)
 
 
+def get_neighbors(node_ids: list[str], team_id: str) -> list[dict]:
+    """
+    Return all CodeNodes directly connected to the given node_ids in the graph.
+    Traverses edges in either direction (caller or callee, importer or imported).
+    Excludes nodes already in node_ids to avoid duplicates with ChromaDB results.
+
+    input:
+        node_ids: list of node IDs returned by ChromaDB vector search.
+        team_id:  team scope — only returns nodes belonging to this team.
+    output:
+        list of dicts, each with: node_id, name, type, file_path, docstring,
+        raw_source, relation_type (the edge that connected them).
+    """
+    with _driver.session() as session:
+        return session.execute_read(_read_neighbors, node_ids, team_id)
+
+
 def close() -> None:
     """Close the Neo4j driver connection."""
     _driver.close()
@@ -96,3 +113,22 @@ def _write_edges(tx, edges: list[Edge]) -> None:
             "to_node_id":   e.to_node_id,
             "team_id":      e.team_id,
         } for e in group])
+
+
+def _read_neighbors(tx, node_ids: list[str], team_id: str) -> list[dict]:
+    query = """
+    UNWIND $node_ids AS id
+    MATCH (n:CodeNode {node_id: id, team_id: $team_id})-[r]-(neighbor:CodeNode)
+    WHERE neighbor.team_id = $team_id
+      AND NOT neighbor.node_id IN $node_ids
+    RETURN DISTINCT
+        neighbor.node_id   AS node_id,
+        neighbor.name      AS name,
+        neighbor.type      AS type,
+        neighbor.file_path AS file_path,
+        neighbor.docstring AS docstring,
+        neighbor.raw_source AS raw_source,
+        type(r)            AS relation_type
+    """
+    result = tx.run(query, node_ids=node_ids, team_id=team_id)
+    return [dict(record) for record in result]

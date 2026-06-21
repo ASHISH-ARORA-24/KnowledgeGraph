@@ -1,6 +1,6 @@
 # Progress
 
-## Status: Cycle 2 Complete
+## Status: Cycle 3 In Progress
 
 ---
 
@@ -19,6 +19,12 @@
 ## In Progress
 
 - [ ] Cycle 3 — Neo4j Knowledge Graph
+  - [x] Edge extraction from AST (DEFINED_IN, BELONGS_TO, IMPORTS, INHERITS, CALLS)
+  - [x] Neo4j storage layer (graph_store.py — store_nodes, store_edges)
+  - [x] docker-compose.yml with Neo4j container
+  - [x] Ingest pipeline writes to both ChromaDB and Neo4j
+  - [ ] Graph-enhanced RAG (get_neighbors, expand query results via graph)
+  - [ ] Impact query CLI command
 
 ---
 
@@ -28,7 +34,7 @@
 |---|---|---|
 | 1 | One file, AST parse, ChromaDB, Ollama, RAG CLI | **Complete** |
 | 2 | Repo walker, batch ingest, 3-mode CLI | **Complete** |
-| 3 | Neo4j graph, nodes + edges, graph-enhanced RAG | Not started |
+| 3 | Neo4j graph, nodes + edges, graph-enhanced RAG | **In Progress** |
 | 4 | Markdown / README doc ingestion | Not started |
 | 5 | Web URL crawler (requests + BeautifulSoup) | Not started |
 | 6 | Multi-team registration + isolation proof | Not started |
@@ -56,3 +62,4 @@
 | 2026-06-21 | Use uv instead of pip + requirements.txt | Lock file pins all 124 transitive deps; reproducible installs across machines |
 | 2026-06-21 | pytest config merged into pyproject.toml | One less config file; pyproject.toml is the modern Python standard |
 | 2026-06-21 | Unit tests added for all Cycle 1 modules | 97 tests covering ast_parser, embedder, vector_store, ollama_client, cli |
+| 2026-06-21 | Neo4j driver wired into ingest pipeline | Both ChromaDB and Neo4j are written on every ingest; docker-compose.yml provides the container |

@@ -12,8 +12,8 @@ import json
 import click
 from src.parsers.ast_parser import parse_file
 from src.crawlers.repo_walker import walk_repo
-from src.storage.vector_store import store
-from src.storage.vector_store import search
+from src.storage.vector_store import store, search
+from src.storage.graph_store import store_nodes, store_edges
 from src.skills.ollama_client import build_prompt, ask_ollama
 
 
@@ -82,15 +82,21 @@ def _require_team(team: str, flag: str) -> str:
 
 
 def _ingest_file(file_path: str, team_id: str) -> None:
-    """Parse a single file and store its nodes."""
+    """Parse a single file and store its nodes and edges."""
     click.echo(f"Parsing {file_path}...")
     nodes, edges = parse_file(file_path, team_id)
     click.echo(f"  Found {len(nodes)} nodes, {len(edges)} edges")
+
+    click.echo("  Storing in ChromaDB...")
     store(nodes, team_id)
+
+    click.echo("  Storing in Neo4j...")
+    store_nodes(nodes)
+    store_edges(edges)
 
 
 def _ingest_project(project_path: str, team_id: str) -> None:
-    """Walk a directory, parse every .py file, batch embed and store all nodes."""
+    """Walk a directory, parse every .py file, batch embed and store all nodes and edges."""
     click.echo(f"Walking {project_path}...")
     py_files = walk_repo(project_path)
     click.echo(f"  Found {len(py_files)} Python files")
@@ -104,9 +110,12 @@ def _ingest_project(project_path: str, team_id: str) -> None:
         all_nodes.extend(nodes)
         all_edges.extend(edges)
 
-    click.echo(f"Storing {len(all_nodes)} total nodes into collection '{team_id}'...")
+    click.echo(f"Storing {len(all_nodes)} nodes in ChromaDB...")
     store(all_nodes, team_id)
-    click.echo(f"Edges extracted: {len(all_edges)} (Neo4j storage coming in Cycle 3)")
+
+    click.echo(f"Storing {len(all_nodes)} nodes and {len(all_edges)} edges in Neo4j...")
+    store_nodes(all_nodes)
+    store_edges(all_edges)
 
 
 def _ingest_config(config_path: str) -> None:

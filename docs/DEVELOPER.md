@@ -7,9 +7,21 @@
 - Git
 - Ollama (install from https://ollama.com)
 
-## Quick Start (Cycle 1)
+## Quick Start
 
-> This section will be filled in once Cycle 1 is built.
+```bash
+# 1. Start Neo4j (required from Cycle 3 onwards)
+docker compose up -d
+
+# 2. Install Python dependencies
+uv sync
+
+# 3. Ingest a team's repos
+uv run python -m src.cli ingest --config configs/team_alpha.json
+
+# 4. Ask a question
+uv run python -m src.cli query --team team-alpha --question "What does calculate_tax do?"
+```
 
 ## Repository Structure
 
@@ -41,17 +53,23 @@ KnowledgeGraph/
 ## Running Locally
 
 ```bash
-# Start all infrastructure containers
+# Start Neo4j
 docker compose up -d
 
 # Install Python dependencies
-pip install -r requirements.txt
+uv sync
 
-# Onboard a team
-python -m src.cli onboard --config team_config.json
+# Ingest a single file
+uv run python -m src.cli ingest --team team-alpha --file path/to/file.py
+
+# Ingest a full directory
+uv run python -m src.cli ingest --team team-alpha --project path/to/repo/
+
+# Ingest all repos for a team from config
+uv run python -m src.cli ingest --config configs/team_alpha.json
 
 # Ask a question
-python -m src.cli query --team team-alpha --question "What does function X do?"
+uv run python -m src.cli query --team team-alpha --question "What does function X do?"
 ```
 
 ## Team Config Format

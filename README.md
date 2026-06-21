@@ -108,7 +108,7 @@ User question: "What does the calculate_tax function do?"
 | Vector DB | ChromaDB | In-process, no container, SQLite-backed |
 | Graph DB | Neo4j Community *(Cycle 3)* | Industry standard for graph data |
 | LLM | Ollama (phi, llama3, mistral) | Fully local, zero API cost |
-| Crawlers | GitPython, requests, BeautifulSoup *(Cycle 2+)* | Open source, well-supported |
+| Repo Walker | Python `pathlib` | Recursive `.py` file discovery, skips venv/.git/pycache |
 | CLI | Click | Decorator-based commands, auto help text, built-in test runner |
 | Packaging | uv + pyproject.toml | Fast installs, locked transitive deps |
 | Tests | pytest | Industry standard |
@@ -146,25 +146,48 @@ uv run python -m src.cli query --help
 
 ### ingest
 
-Parse a Python file and store its nodes in ChromaDB.
+Three modes — single file, full project directory, or team config.
+
+**Mode 1 — single file:**
 
 ```bash
 uv run python -m src.cli ingest \
   --team team-alpha \
-  --file data/team-alpha/repos/payment-service/payment_service.py
+  --file data/team-alpha/repos/order-service/order_service.py
 ```
 
-**What it does:**
-1. Runs the AST parser on the file — extracts MODULE, CLASS, FUNCTION nodes
-2. Embeds each node using sentence-transformers
+**Mode 2 — full project directory:**
+
+```bash
+uv run python -m src.cli ingest \
+  --team team-alpha \
+  --project data/team-alpha/repos/payment-service
+```
+
+Walks the directory recursively, finds every `.py` file, parses them all,
+batch embeds all nodes in a single model call, and stores everything.
+
+**Mode 3 — team config (all repos at once):**
+
+```bash
+uv run python -m src.cli ingest --config configs/team_alpha.json
+```
+
+Reads `team_id` and `repos` list from the JSON config.
+Runs the project walker on each repo automatically.
+
+**What all modes do:**
+1. Runs the AST parser — extracts MODULE, CLASS, FUNCTION nodes per file
+2. Batch embeds all nodes in one `model.encode()` call
 3. Stores embeddings in the team's ChromaDB collection
 
 **Options:**
 
-| Flag | Required | Description |
+| Flag | Requires | Description |
 |---|---|---|
-| `--team` | Yes | Team ID — scopes data to this team |
-| `--file` | Yes | Path to the `.py` file to ingest |
+| `--file <path>` | `--team` | Ingest a single `.py` file |
+| `--project <dir>` | `--team` | Ingest all `.py` files in a directory |
+| `--config <json>` | — | Read team config, ingest all repos listed |
 
 ---
 
@@ -226,6 +249,8 @@ uv run pytest -v
 ```
 KnowledgeGraph/
 ├── src/
+│   ├── crawlers/
+│   │   └── repo_walker.py      # recursive .py file discovery, skips venv/.git
 │   ├── parsers/
 │   │   └── ast_parser.py       # AST → CodeNode extraction
 │   ├── enrichment/
@@ -234,18 +259,24 @@ KnowledgeGraph/
 │   │   └── vector_store.py     # ChromaDB store + search
 │   ├── skills/
 │   │   └── ollama_client.py    # RAG prompt builder + Ollama HTTP client
-│   └── cli.py                  # Click CLI — ingest and query commands
+│   └── cli.py                  # Click CLI — ingest (3 modes) and query
 ├── tests/
 │   ├── conftest.py             # shared fixtures (sample_node)
-│   ├── unit/                   # 96 tests, all mocked, fast
-│   └── integration/            # real deps, added from Cycle 2
+│   ├── unit/                   # 115 tests, all mocked, fast
+│   └── integration/            # real deps, added from Cycle 3
 ├── configs/
-│   └── team_alpha.json         # team registration config
+│   └── team_alpha.json         # team config — repos and doc_sources list
 ├── data/
 │   └── team-alpha/
 │       └── repos/
-│           └── payment-service/
-│               └── payment_service.py   # sample file for Cycle 1
+│           ├── payment-service/    # multi-file uv project (5 modules)
+│           │   ├── constants.py
+│           │   ├── exceptions.py
+│           │   ├── processors.py
+│           │   ├── refunds.py
+│           │   └── utils.py
+│           └── order-service/
+│               └── order_service.py  # standalone single-file demo
 ├── docs/
 │   ├── DOMAIN.md               # data models, business rules
 │   ├── ARCHITECTURE.md         # system design, component breakdown
@@ -264,7 +295,7 @@ KnowledgeGraph/
 | Cycle | What Gets Built | New AI Concept |
 |---|---|---|
 | **1** ✅ | AST parser, ChromaDB, Ollama, RAG CLI | Embeddings, Vector Search, RAG |
-| 2 | Repo walker, GitPython, batch ingest | Batch embeddings, chunking strategy |
+| **2** ✅ | Repo walker, batch ingest, 3-mode CLI (`--file` / `--project` / `--config`) | Batch embeddings, chunking strategy |
 | 3 | Neo4j, graph nodes + edges, graph traversal | Knowledge graphs, graph-enhanced RAG |
 | 4 | Markdown doc crawler, chunker | Document chunking, mixed search |
 | 5 | Web crawler (requests + BeautifulSoup) | Web crawling, HTML parsing |

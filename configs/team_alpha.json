@@ -3,7 +3,8 @@
   "name": "Alpha Team",
   "users": ["alice", "bob"],
   "repos": [
-    "data/team-alpha/repos/payment-service"
+    "data/team-alpha/repos/payment-service",
+    "data/team-alpha/repos/order-service"
   ],
   "doc_sources": [
     "data/team-alpha/docs"

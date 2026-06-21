@@ -1,6 +1,6 @@
 # Progress
 
-## Status: Cycle 1 Complete
+## Status: Cycle 2 Complete
 
 ---
 
@@ -12,12 +12,13 @@
 - [x] Tech stack decided
 - [x] Iterative cycles planned (11 cycles)
 - [x] Cycle 1 — Foundation: One File, Ask a Question
+- [x] Cycle 2 — Full Repo Crawl
 
 ---
 
 ## In Progress
 
-- [ ] Cycle 2 — Full Repo Crawl
+- [ ] Cycle 3 — Neo4j Knowledge Graph
 
 ---
 
@@ -26,7 +27,7 @@
 | Cycle | Goal | Status |
 |---|---|---|
 | 1 | One file, AST parse, ChromaDB, Ollama, RAG CLI | **Complete** |
-| 2 | Full repo crawl, GitPython, batch ingest | Not started |
+| 2 | Repo walker, batch ingest, 3-mode CLI | **Complete** |
 | 3 | Neo4j graph, nodes + edges, graph-enhanced RAG | Not started |
 | 4 | Markdown / README doc ingestion | Not started |
 | 5 | Web URL crawler (requests + BeautifulSoup) | Not started |

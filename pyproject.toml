@@ -1,0 +1,23 @@
+[project]
+name = "knowledge-graph"
+version = "0.1.0"
+description = "AI-powered Knowledge Graph — code intelligence and RAG over local repositories"
+requires-python = ">=3.12"
+
+dependencies = [
+    "sentence-transformers==3.3.1",
+    "chromadb==0.6.3",
+    "requests==2.32.3",
+]
+
+[project.scripts]
+kg = "src.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

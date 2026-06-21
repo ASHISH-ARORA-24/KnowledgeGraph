@@ -1,0 +1,11 @@
+{
+  "team_id": "team-alpha",
+  "name": "Alpha Team",
+  "users": ["alice", "bob"],
+  "repos": [
+    "data/team-alpha/repos/payment-service"
+  ],
+  "doc_sources": [
+    "data/team-alpha/docs"
+  ]
+}

@@ -1,0 +1,6 @@
+[project]
+name = "payment-service"
+version = "0.1.0"
+description = "Payment processing service — handles card and wallet payments, tax calculation, and refunds"
+requires-python = ">=3.12"
+dependencies = []

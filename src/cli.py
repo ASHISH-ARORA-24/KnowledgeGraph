@@ -84,8 +84,8 @@ def _require_team(team: str, flag: str) -> str:
 def _ingest_file(file_path: str, team_id: str) -> None:
     """Parse a single file and store its nodes."""
     click.echo(f"Parsing {file_path}...")
-    nodes = parse_file(file_path, team_id)
-    click.echo(f"  Found {len(nodes)} nodes")
+    nodes, edges = parse_file(file_path, team_id)
+    click.echo(f"  Found {len(nodes)} nodes, {len(edges)} edges")
     store(nodes, team_id)
 
 
@@ -96,14 +96,17 @@ def _ingest_project(project_path: str, team_id: str) -> None:
     click.echo(f"  Found {len(py_files)} Python files")
 
     all_nodes = []
+    all_edges = []
     for file_path in py_files:
         click.echo(f"  Parsing {file_path}...")
-        nodes = parse_file(file_path, team_id)
-        click.echo(f"    {len(nodes)} nodes")
+        nodes, edges = parse_file(file_path, team_id)
+        click.echo(f"    {len(nodes)} nodes, {len(edges)} edges")
         all_nodes.extend(nodes)
+        all_edges.extend(edges)
 
     click.echo(f"Storing {len(all_nodes)} total nodes into collection '{team_id}'...")
     store(all_nodes, team_id)
+    click.echo(f"Edges extracted: {len(all_edges)} (Neo4j storage coming in Cycle 3)")
 
 
 def _ingest_config(config_path: str) -> None:

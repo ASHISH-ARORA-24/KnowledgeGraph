@@ -48,7 +48,7 @@ def runner():
 # ---------------------------------------------------------------------------
 
 def test_ingest_calls_parse_file_with_correct_args(runner):
-    with patch("src.cli.parse_file", return_value=[_sample_node()]) as mock_parse, \
+    with patch("src.cli.parse_file", return_value=([_sample_node()], [])) as mock_parse, \
          patch("src.cli.store"):
         runner.invoke(cli, ["ingest", "--team", "team-alpha", "--file", "src/billing.py"])
     mock_parse.assert_called_once_with("src/billing.py", "team-alpha")
@@ -56,21 +56,21 @@ def test_ingest_calls_parse_file_with_correct_args(runner):
 
 def test_ingest_passes_parsed_nodes_to_store(runner):
     nodes = [_sample_node()]
-    with patch("src.cli.parse_file", return_value=nodes), \
+    with patch("src.cli.parse_file", return_value=(nodes, [])), \
          patch("src.cli.store") as mock_store:
         runner.invoke(cli, ["ingest", "--team", "team-alpha", "--file", "src/billing.py"])
     mock_store.assert_called_once_with(nodes, "team-alpha")
 
 
 def test_ingest_passes_team_id_to_store(runner):
-    with patch("src.cli.parse_file", return_value=[_sample_node()]), \
+    with patch("src.cli.parse_file", return_value=([_sample_node()], [])), \
          patch("src.cli.store") as mock_store:
         runner.invoke(cli, ["ingest", "--team", "team-beta", "--file", "src/billing.py"])
     assert mock_store.call_args.args[1] == "team-beta"
 
 
 def test_ingest_exits_successfully(runner):
-    with patch("src.cli.parse_file", return_value=[_sample_node()]), \
+    with patch("src.cli.parse_file", return_value=([_sample_node()], [])), \
          patch("src.cli.store"):
         result = runner.invoke(cli, ["ingest", "--team", "team-alpha", "--file", "src/billing.py"])
     assert result.exit_code == 0

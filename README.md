@@ -288,8 +288,9 @@ uv run python -m src.cli query \
 **What it does:**
 1. Embeds the question into a vector
 2. Searches ChromaDB for the top-3 most semantically similar nodes
-3. Builds a RAG prompt with those nodes as context
-4. Sends the prompt to Ollama and prints the grounded answer
+3. Calls Neo4j to find all nodes connected to those 3 (graph neighbors)
+4. Builds a RAG prompt combining both sets — vector matches + graph neighbors
+5. Sends the prompt to Ollama and prints the grounded answer
 
 **Options:**
 
@@ -298,6 +299,40 @@ uv run python -m src.cli query \
 | `--team` | Yes | — | Team ID to search within |
 | `--question` | Yes | — | Natural language question |
 | `--model` | No | `phi` | Ollama model to use |
+
+---
+
+### impact
+
+Find everything that depends on a given function or class — pure graph traversal.
+
+```bash
+uv run python -m src.cli impact \
+  --team team-alpha \
+  --target "PaymentProcessor.calculate_tax"
+```
+
+**What it does:**
+1. Finds the target node in Neo4j by name
+2. Traverses all incoming `CALLS` and `IMPORTS` edges
+3. Returns every function that calls it and every module that imports it
+
+**Example output:**
+```
+Analysing impact of: PaymentProcessor.calculate_tax
+
+Found 2 dependent(s):
+
+  [CALLS]  PaymentProcessor.process_payment  (FUNCTION)  —  processors.py
+  [CALLS]  PaymentProcessor.apply_tax        (FUNCTION)  —  processors.py
+```
+
+**Options:**
+
+| Flag | Required | Description |
+|---|---|---|
+| `--team` | Yes | Team ID to search within |
+| `--target` | Yes | Function or class name to analyse |
 
 ---
 
@@ -374,7 +409,7 @@ KnowledgeGraph/
 |---|---|---|
 | **1** ✅ | AST parser, ChromaDB, Ollama, RAG CLI | Embeddings, Vector Search, RAG |
 | **2** ✅ | Repo walker, batch ingest, 3-mode CLI (`--file` / `--project` / `--config`) | Batch embeddings, chunking strategy |
-| **3** 🔄 | Neo4j, graph nodes + edges, graph-enhanced RAG, impact query | Knowledge graphs, graph traversal |
+| **3** ✅ | Neo4j, graph nodes + edges, graph-enhanced RAG, impact query | Knowledge graphs, graph traversal |
 | 4 | Markdown doc crawler, chunker | Document chunking, mixed search |
 | 5 | Web crawler (requests + BeautifulSoup) | Web crawling, HTML parsing |
 | 6 | Multi-team registration, isolation proof | Multi-tenancy in AI systems |

@@ -58,3 +58,4 @@
 | 2026-06-21 | pytest config merged into pyproject.toml | One less config file; pyproject.toml is the modern Python standard |
 | 2026-06-21 | Unit tests added for all Cycle 1 modules | 97 tests covering ast_parser, embedder, vector_store, ollama_client, cli |
 | 2026-06-21 | Neo4j driver wired into ingest pipeline | Both ChromaDB and Neo4j are written on every ingest; docker-compose.yml provides the container |
+| 2026-06-21 | Integration tests added for graph_store | 16 tests hit real Neo4j; fail immediately with clear message if Neo4j is not running |

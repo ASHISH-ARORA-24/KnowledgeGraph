@@ -32,50 +32,68 @@ This is RAG (Retrieval Augmented Generation) over a code knowledge graph.
 
 ## The Full Pipeline — How a File Becomes Queryable Knowledge
 
+### Ingestion
+
 ```
 Python file (.py)
       │
       ▼
-  AST Parser                    ← Python's built-in `ast` module
-  Extracts: MODULE, CLASS,
-  FUNCTION nodes
-      │
-      ▼
-  CodeNode (structured data)    ← one object per module / class / function
-  ┌─────────────────────────┐
-  │ node_id   : MD5 hash    │
-  │ team_id   : team-alpha  │
-  │ type      : FUNCTION    │
-  │ name      : calculate_tax│
-  │ file_path : billing.py  │
-  │ line_start: 41          │
-  │ line_end  : 54          │
-  │ docstring : "Calculates…"│
-  │ raw_source: "def calc…" │
-  └─────────────────────────┘
-      │
-      ▼
-  Embedder                      ← sentence-transformers (all-MiniLM-L6-v2)
-  text = name + docstring + raw_source
-  vector = model.encode(text)   ← 384 numbers representing semantic meaning
-      │
-      ▼
-  ChromaDB (Vector Database)    ← one collection per team
-  collection.add(
-    ids        = ["abc123"],           ← stable MD5 node ID
-    embeddings = [[0.12, -0.34, …]],  ← 384-dim vector (what gets searched)
-    metadatas  = [{"team_id": "team-alpha",
-                   "name":    "calculate_tax",
-                   "type":    "FUNCTION",
-                   "file_path":"billing.py",
-                   "docstring":"Calculates tax…"}],
-    documents  = ["Calculates tax…"]  ← raw text returned with results
-  )
+  AST Parser (ast_parser.py)           ← Python's built-in `ast` module
+  ┌──────────────────────────────────────────────────────┐
+  │  Extracts nodes: MODULE, CLASS, FUNCTION             │
+  │  Extracts edges: DEFINED_IN, BELONGS_TO,             │
+  │                  IMPORTS, INHERITS, CALLS            │
+  └──────────────────────────────────────────────────────┘
+      │                          │
+      │ CodeNodes                │ Edges
+      ▼                          │
+  CodeNode (structured data)     │     ← one object per module / class / function
+  ┌─────────────────────────┐    │
+  │ node_id   : MD5 hash    │    │
+  │ team_id   : team-alpha  │    │
+  │ type      : FUNCTION    │    │
+  │ name      : calculate_tax│   │
+  │ file_path : billing.py  │    │
+  │ line_start: 41          │    │
+  │ line_end  : 54          │    │
+  │ docstring : "Calculates…"│   │
+  │ raw_source: "def calc…" │    │
+  └─────────────────────────┘    │
+      │                          │
+      ▼                          ▼
+  Embedder                   Neo4j (Graph Database)
+  (sentence-transformers)    ┌─────────────────────────────────────────┐
+  text = name+docstring+src  │  Node label: :CodeNode                  │
+  vector = model.encode(text)│  Properties:                            │
+      │                      │    node_id   : "a3f9…" (MD5)           │
+      ▼                      │    team_id   : "team-alpha"             │
+  ChromaDB (Vector DB)       │    type      : "FUNCTION"               │
+  collection.add(            │    name      : "calculate_tax"          │
+    ids   = ["a3f9…"],       │    file_path : "processors.py"          │
+    embeddings = [[…]],      │    docstring : "Calculates GST tax…"    │
+    metadatas  = [{…}],      │    raw_source: "def calculate_tax(…)"   │
+    documents  = ["…"]       │    line_start: 41                       │
+  )                          │    line_end  : 54                       │
+                             └─────────────────────────────────────────┘
+                                              │
+                             Edges are stored as Neo4j relationships.
+                             Each relationship has:
+                               - a TYPE  (the edge label, e.g. CALLS)
+                               - a direction  (from node → to node)
+                               - one property: team_id
+
+  DEFINED_IN : (calculate_tax:CodeNode)    -[:DEFINED_IN {team_id}]-> (processors:CodeNode)
+  BELONGS_TO : (calculate_tax:CodeNode)    -[:BELONGS_TO {team_id}]-> (PaymentProcessor:CodeNode)
+  IMPORTS    : (processors:CodeNode)       -[:IMPORTS    {team_id}]-> (constants:CodeNode)
+  INHERITS   : (RefundProcessor:CodeNode)  -[:INHERITS   {team_id}]-> (PaymentProcessor:CodeNode)
+  CALLS      : (process_payment:CodeNode)  -[:CALLS      {team_id}]-> (calculate_tax:CodeNode)
 ```
 
-At query time, the question is embedded into a vector using the same model,
-and ChromaDB finds the stored nodes whose vectors are closest — meaning they
-are semantically similar to the question, not just keyword matches.
+Every node lands in **both** databases:
+- **ChromaDB** — stores the vector so you can find it by semantic meaning
+- **Neo4j** — stores the node and all its edges so you can traverse relationships
+
+### Query (Graph-Enhanced RAG)
 
 ```
 User question: "What does the calculate_tax function do?"
@@ -85,17 +103,70 @@ User question: "What does the calculate_tax function do?"
       │
       ▼
   ChromaDB.query(query_vector, n_results=3)
-  Returns: top-3 most similar CodeNodes
+  Returns: top-3 most semantically similar CodeNodes
+      │
+      ▼
+  Neo4j.get_neighbors(those 3 node_ids)       ← NEW in Cycle 3
+  Returns: all nodes directly connected by edges
+  e.g. "process_payment CALLS calculate_tax"
+       → process_payment is added to context
+      │
+      ▼
+  Combined context = ChromaDB results + graph neighbors
       │
       ▼
   Build RAG prompt:
   "Answer only from the context below.
    CONTEXT: --- calculate_tax (FUNCTION) --- Calculates GST tax…
+             --- process_payment (FUNCTION) --- Calls calculate_tax…
    QUESTION: What does calculate_tax do?"
       │
       ▼
-  Ollama (local LLM)  →  grounded answer
+  Ollama (local LLM)  →  richer, more grounded answer
 ```
+
+---
+
+## Knowledge Graph — Nodes and Edges
+
+Every Python file is parsed into **nodes** (things) and **edges** (relationships between things).
+
+### Node Types
+
+| Type | What it represents | Example |
+|---|---|---|
+| `MODULE` | One `.py` file as a whole | `billing.py` |
+| `CLASS` | A class definition | `class PaymentProcessor` |
+| `FUNCTION` | A top-level function or method | `def calculate_tax` / `PaymentProcessor.apply_tax` |
+
+### Edge Types
+
+| Edge | From | To | Built from |
+|---|---|---|---|
+| `DEFINED_IN` | CLASS or FUNCTION | MODULE | Every class and function is defined in the file's module |
+| `BELONGS_TO` | FUNCTION (method) | CLASS | A method found inside a class body belongs to that class |
+| `IMPORTS` | MODULE | MODULE | `from .constants import X` — source file imports target file |
+| `INHERITS` | CLASS | CLASS (parent) | `class Child(Base):` — child inherits from parent |
+| `CALLS` | FUNCTION | FUNCTION | A function call found inside a function body |
+
+### Example: payment-service graph
+
+```
+processors.py (MODULE)
+    │
+    ├─[DEFINED_IN]── PaymentProcessor (CLASS)
+    │                     │
+    │                     ├─[BELONGS_TO]── PaymentProcessor.calculate_tax (FUNCTION)
+    │                     │
+    │                     └─[BELONGS_TO]── PaymentProcessor.process_payment (FUNCTION)
+    │                                           │
+    │                                           └─[CALLS]── PaymentProcessor.calculate_tax
+    │
+    └─[IMPORTS]──────── constants.py (MODULE)
+```
+
+This graph is what powers impact analysis: given `calculate_tax`, traverse
+all incoming `CALLS` edges to find every function that depends on it.
 
 ---
 
@@ -124,6 +195,9 @@ User question: "What does the calculate_tax function do?"
 git clone <repo-url>
 cd KnowledgeGraph
 uv sync
+
+# Start Neo4j (required from Cycle 3 onwards)
+docker compose up -d
 
 # Pull a model into Ollama (one-time)
 ollama pull phi
@@ -177,9 +251,10 @@ Reads `team_id` and `repos` list from the JSON config.
 Runs the project walker on each repo automatically.
 
 **What all modes do:**
-1. Runs the AST parser — extracts MODULE, CLASS, FUNCTION nodes per file
+1. Runs the AST parser — extracts MODULE, CLASS, FUNCTION nodes and all edges per file
 2. Batch embeds all nodes in one `model.encode()` call
-3. Stores embeddings in the team's ChromaDB collection
+3. Stores embeddings in the team's ChromaDB collection (vector search)
+4. Stores nodes and edges in Neo4j (graph traversal)
 
 **Options:**
 
@@ -252,17 +327,18 @@ KnowledgeGraph/
 │   ├── crawlers/
 │   │   └── repo_walker.py      # recursive .py file discovery, skips venv/.git
 │   ├── parsers/
-│   │   └── ast_parser.py       # AST → CodeNode extraction
+│   │   └── ast_parser.py       # AST → CodeNode + Edge extraction
 │   ├── enrichment/
 │   │   └── embedder.py         # CodeNode → vector via sentence-transformers
 │   ├── storage/
-│   │   └── vector_store.py     # ChromaDB store + search
+│   │   ├── vector_store.py     # ChromaDB store + search
+│   │   └── graph_store.py      # Neo4j store_nodes + store_edges (Cycle 3)
 │   ├── skills/
 │   │   └── ollama_client.py    # RAG prompt builder + Ollama HTTP client
-│   └── cli.py                  # Click CLI — ingest (3 modes) and query
+│   └── cli.py                  # Click CLI — ingest (3 modes), query, impact
 ├── tests/
 │   ├── conftest.py             # shared fixtures (sample_node)
-│   ├── unit/                   # 115 tests, all mocked, fast
+│   ├── unit/                   # all mocked, fast
 │   └── integration/            # real deps, added from Cycle 3
 ├── configs/
 │   └── team_alpha.json         # team config — repos and doc_sources list
@@ -283,7 +359,9 @@ KnowledgeGraph/
 │   ├── CYCLES.md               # all 11 cycles with done-when criteria
 │   ├── PROGRESS.md             # current status and decisions log
 │   └── cycles/
-│       └── cycle1.md           # journal: what we built, learnings, interview Q&A
+│       ├── cycle1.md           # journal: what we built, learnings, interview Q&A
+│       └── cycle2.md           # journal: repo walker, batch ingest, problems hit
+├── docker-compose.yml          # Neo4j container (Cycle 3)
 ├── pyproject.toml              # dependencies + pytest config
 └── uv.lock                     # full dependency lock (all 124 packages)
 ```
@@ -296,7 +374,7 @@ KnowledgeGraph/
 |---|---|---|
 | **1** ✅ | AST parser, ChromaDB, Ollama, RAG CLI | Embeddings, Vector Search, RAG |
 | **2** ✅ | Repo walker, batch ingest, 3-mode CLI (`--file` / `--project` / `--config`) | Batch embeddings, chunking strategy |
-| 3 | Neo4j, graph nodes + edges, graph traversal | Knowledge graphs, graph-enhanced RAG |
+| **3** 🔄 | Neo4j, graph nodes + edges, graph-enhanced RAG, impact query | Knowledge graphs, graph traversal |
 | 4 | Markdown doc crawler, chunker | Document chunking, mixed search |
 | 5 | Web crawler (requests + BeautifulSoup) | Web crawling, HTML parsing |
 | 6 | Multi-team registration, isolation proof | Multi-tenancy in AI systems |

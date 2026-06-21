@@ -54,11 +54,12 @@ def _write_nodes(tx, nodes: list[CodeNode]) -> None:
     query = """
     UNWIND $nodes AS n
     MERGE (node:CodeNode {node_id: n.node_id})
-    SET node.team_id   = n.team_id,
-        node.type      = n.type,
-        node.name      = n.name,
-        node.file_path = n.file_path,
-        node.docstring = n.docstring,
+    SET node.team_id    = n.team_id,
+        node.type       = n.type,
+        node.name       = n.name,
+        node.file_path  = n.file_path,
+        node.docstring  = n.docstring,
+        node.raw_source = n.raw_source,
         node.line_start = n.line_start,
         node.line_end   = n.line_end
     """
@@ -69,6 +70,7 @@ def _write_nodes(tx, nodes: list[CodeNode]) -> None:
         "name":       n.name,
         "file_path":  n.file_path,
         "docstring":  n.docstring,
+        "raw_source": n.raw_source,
         "line_start": n.line_start,
         "line_end":   n.line_end,
     } for n in nodes])

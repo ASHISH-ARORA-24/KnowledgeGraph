@@ -109,6 +109,7 @@ User question: "What does the calculate_tax function do?"
 | Graph DB | Neo4j Community *(Cycle 3)* | Industry standard for graph data |
 | LLM | Ollama (phi, llama3, mistral) | Fully local, zero API cost |
 | Crawlers | GitPython, requests, BeautifulSoup *(Cycle 2+)* | Open source, well-supported |
+| CLI | Click | Decorator-based commands, auto help text, built-in test runner |
 | Packaging | uv + pyproject.toml | Fast installs, locked transitive deps |
 | Tests | pytest | Industry standard |
 
@@ -126,23 +127,79 @@ uv sync
 
 # Pull a model into Ollama (one-time)
 ollama pull phi
+```
 
-# Ingest a Python file
+---
+
+## CLI Commands
+
+The CLI is built with [Click](https://click.palletsprojects.com/). Every command has a `--help` flag.
+
+```bash
+# Show all available commands
+uv run python -m src.cli --help
+
+# Show options for a specific command
+uv run python -m src.cli ingest --help
+uv run python -m src.cli query --help
+```
+
+### ingest
+
+Parse a Python file and store its nodes in ChromaDB.
+
+```bash
 uv run python -m src.cli ingest \
   --team team-alpha \
   --file data/team-alpha/repos/payment-service/payment_service.py
+```
 
-# Ask a question
+**What it does:**
+1. Runs the AST parser on the file — extracts MODULE, CLASS, FUNCTION nodes
+2. Embeds each node using sentence-transformers
+3. Stores embeddings in the team's ChromaDB collection
+
+**Options:**
+
+| Flag | Required | Description |
+|---|---|---|
+| `--team` | Yes | Team ID — scopes data to this team |
+| `--file` | Yes | Path to the `.py` file to ingest |
+
+---
+
+### query
+
+Search the knowledge graph and get an AI-generated answer.
+
+```bash
 uv run python -m src.cli query \
   --team team-alpha \
   --question "What does the calculate_tax function do?"
+```
 
-# Use a different model
+With a different model:
+
+```bash
 uv run python -m src.cli query \
   --team team-alpha \
   --question "What does the calculate_tax function do?" \
   --model llama3
 ```
+
+**What it does:**
+1. Embeds the question into a vector
+2. Searches ChromaDB for the top-3 most semantically similar nodes
+3. Builds a RAG prompt with those nodes as context
+4. Sends the prompt to Ollama and prints the grounded answer
+
+**Options:**
+
+| Flag | Required | Default | Description |
+|---|---|---|---|
+| `--team` | Yes | — | Team ID to search within |
+| `--question` | Yes | — | Natural language question |
+| `--model` | No | `phi` | Ollama model to use |
 
 ---
 
@@ -177,10 +234,10 @@ KnowledgeGraph/
 │   │   └── vector_store.py     # ChromaDB store + search
 │   ├── skills/
 │   │   └── ollama_client.py    # RAG prompt builder + Ollama HTTP client
-│   └── cli.py                  # ingest and query commands
+│   └── cli.py                  # Click CLI — ingest and query commands
 ├── tests/
 │   ├── conftest.py             # shared fixtures (sample_node)
-│   ├── unit/                   # 97 tests, all mocked, fast
+│   ├── unit/                   # 96 tests, all mocked, fast
 │   └── integration/            # real deps, added from Cycle 2
 ├── configs/
 │   └── team_alpha.json         # team registration config

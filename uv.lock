@@ -870,6 +870,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "chromadb" },
+    { name = "click" },
     { name = "requests" },
     { name = "sentence-transformers" },
 ]
@@ -882,6 +883,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "chromadb", specifier = "==0.6.3" },
+    { name = "click", specifier = ">=8.4.1" },
     { name = "requests", specifier = "==2.32.3" },
     { name = "sentence-transformers", specifier = "==3.3.1" },
 ]

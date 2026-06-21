@@ -1,8 +1,6 @@
 # Progress
 
-## Status: Planning Phase
-
-No code has been written yet. The architecture and domain have been documented.
+## Status: Cycle 1 Complete
 
 ---
 
@@ -12,23 +10,22 @@ No code has been written yet. The architecture and domain have been documented.
 - [x] Architecture designed (see ARCHITECTURE.md)
 - [x] Domain model documented (see DOMAIN.md)
 - [x] Tech stack decided
-- [x] Iterative cycles planned (8 cycles)
+- [x] Iterative cycles planned (11 cycles)
+- [x] Cycle 1 — Foundation: One File, Ask a Question
 
 ---
 
 ## In Progress
 
-- [ ] Cycle 1: Foundation — One Repo, Ask Questions
+- [ ] Cycle 2 — Full Repo Crawl
 
 ---
 
-## Pending Cycles
-
-Full cycle details in `docs/CYCLES.md`.
+## Cycle Status
 
 | Cycle | Goal | Status |
 |---|---|---|
-| 1 | One file, AST parse, ChromaDB, Ollama, RAG CLI | Not started |
+| 1 | One file, AST parse, ChromaDB, Ollama, RAG CLI | **Complete** |
 | 2 | Full repo crawl, GitPython, batch ingest | Not started |
 | 3 | Neo4j graph, nodes + edges, graph-enhanced RAG | Not started |
 | 4 | Markdown / README doc ingestion | Not started |
@@ -54,4 +51,7 @@ Full cycle details in `docs/CYCLES.md`.
 | 2026-06-20 | Use Neo4j Community for graph | Most popular open-source graph DB, good tooling |
 | 2026-06-20 | Build team isolation from Cycle 1 | Retrofitting isolation later would require restructuring everything |
 | 2026-06-20 | Local-first, Docker-first | Zero cost, portable to any cloud later |
-| 2026-06-20 | No LangChain / LlamaIndex — build raw | Learning project: must understand every component. Frameworks hide the internals. Once Cycle 1 is built raw, we will know exactly what RAG, embeddings, and graph traversal do. |
+| 2026-06-20 | No LangChain / LlamaIndex — build raw | Learning project: must understand every component |
+| 2026-06-21 | Use uv instead of pip + requirements.txt | Lock file pins all 124 transitive deps; reproducible installs across machines |
+| 2026-06-21 | pytest config merged into pyproject.toml | One less config file; pyproject.toml is the modern Python standard |
+| 2026-06-21 | Unit tests added for all Cycle 1 modules | 97 tests covering ast_parser, embedder, vector_store, ollama_client, cli |

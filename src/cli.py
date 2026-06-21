@@ -13,7 +13,7 @@ import click
 from src.parsers.ast_parser import parse_file
 from src.crawlers.repo_walker import walk_repo
 from src.storage.vector_store import store, search
-from src.storage.graph_store import store_nodes, store_edges, get_neighbors
+from src.storage.graph_store import store_nodes, store_edges, get_neighbors, get_impact
 from src.skills.ollama_client import build_prompt, ask_ollama
 
 
@@ -75,6 +75,23 @@ def query(team, question, model):
 
     click.echo("\n=== ANSWER ===")
     click.echo(answer)
+
+
+@cli.command()
+@click.option("--team",   required=True, help="Team ID")
+@click.option("--target", required=True, help="Function or class name to analyse (e.g. 'PaymentProcessor.calculate_tax')")
+def impact(team, target):
+    """Show every function and module that depends on the given target (graph traversal)."""
+    click.echo(f"Analysing impact of: {target}")
+    results = get_impact(target, team)
+
+    if not results:
+        click.echo("No dependents found — nothing calls or imports this node.")
+        return
+
+    click.echo(f"\nFound {len(results)} dependent(s):\n")
+    for r in results:
+        click.echo(f"  [{r['relation_type']}]  {r['name']}  ({r['type']})  —  {r['file_path']}")
 
 
 # ---------------------------------------------------------------------------

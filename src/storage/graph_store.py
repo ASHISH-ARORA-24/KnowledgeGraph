@@ -58,6 +58,21 @@ def get_neighbors(node_ids: list[str], team_id: str) -> list[dict]:
         return session.execute_read(_read_neighbors, node_ids, team_id)
 
 
+def get_impact(target_name: str, team_id: str) -> list[dict]:
+    """
+    Find every node that depends on target_name — i.e. callers and importers.
+    Traverses incoming CALLS and IMPORTS edges to the target node.
+
+    input:
+        target_name: name of the function or class to analyse (e.g. "PaymentProcessor.calculate_tax")
+        team_id:     team scope — only returns nodes belonging to this team.
+    output:
+        list of dicts, each with: name, type, file_path, relation_type.
+    """
+    with _driver.session() as session:
+        return session.execute_read(_read_impact, target_name, team_id)
+
+
 def close() -> None:
     """Close the Neo4j driver connection."""
     _driver.close()
@@ -113,6 +128,23 @@ def _write_edges(tx, edges: list[Edge]) -> None:
             "to_node_id":   e.to_node_id,
             "team_id":      e.team_id,
         } for e in group])
+
+
+def _read_impact(tx, target_name: str, team_id: str) -> list[dict]:
+    query = """
+    MATCH (caller)-[r:CALLS|IMPORTS]->(target:CodeNode)
+    WHERE target.name    = $name
+      AND target.team_id = $team_id
+      AND caller.team_id = $team_id
+    RETURN DISTINCT
+        caller.name      AS name,
+        caller.type      AS type,
+        caller.file_path AS file_path,
+        type(r)          AS relation_type
+    ORDER BY relation_type, caller.file_path, caller.name
+    """
+    result = tx.run(query, name=target_name, team_id=team_id)
+    return [dict(record) for record in result]
 
 
 def _read_neighbors(tx, node_ids: list[str], team_id: str) -> list[dict]:

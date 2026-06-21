@@ -160,3 +160,41 @@ def test_query_exits_successfully(runner):
 def test_query_fails_without_required_args(runner):
     result = runner.invoke(cli, ["query"])
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# impact command
+# ---------------------------------------------------------------------------
+
+def test_impact_calls_get_impact_with_correct_args(runner):
+    with patch("src.cli.get_impact", return_value=[]) as mock_impact:
+        runner.invoke(cli, ["impact", "--team", "team-alpha", "--target", "calculate_tax"])
+    mock_impact.assert_called_once_with("calculate_tax", "team-alpha")
+
+
+def test_impact_prints_no_dependents_message_when_empty(runner):
+    with patch("src.cli.get_impact", return_value=[]):
+        result = runner.invoke(cli, ["impact", "--team", "team-alpha", "--target", "calculate_tax"])
+    assert "No dependents found" in result.output
+
+
+def test_impact_prints_dependent_name(runner):
+    dependents = [{"name": "process_payment", "type": "FUNCTION",
+                   "file_path": "processors.py", "relation_type": "CALLS"}]
+    with patch("src.cli.get_impact", return_value=dependents):
+        result = runner.invoke(cli, ["impact", "--team", "team-alpha", "--target", "calculate_tax"])
+    assert "process_payment" in result.output
+
+
+def test_impact_prints_relation_type(runner):
+    dependents = [{"name": "process_payment", "type": "FUNCTION",
+                   "file_path": "processors.py", "relation_type": "CALLS"}]
+    with patch("src.cli.get_impact", return_value=dependents):
+        result = runner.invoke(cli, ["impact", "--team", "team-alpha", "--target", "calculate_tax"])
+    assert "CALLS" in result.output
+
+
+def test_impact_exits_successfully(runner):
+    with patch("src.cli.get_impact", return_value=[]):
+        result = runner.invoke(cli, ["impact", "--team", "team-alpha", "--target", "calculate_tax"])
+    assert result.exit_code == 0

@@ -1,6 +1,6 @@
 # Progress
 
-## Status: Cycle 3 In Progress
+## Status: Cycle 3 Complete
 
 ---
 
@@ -13,18 +13,13 @@
 - [x] Iterative cycles planned (11 cycles)
 - [x] Cycle 1 — Foundation: One File, Ask a Question
 - [x] Cycle 2 — Full Repo Crawl
+- [x] Cycle 3 — Neo4j Knowledge Graph
 
 ---
 
 ## In Progress
 
-- [ ] Cycle 3 — Neo4j Knowledge Graph
-  - [x] Edge extraction from AST (DEFINED_IN, BELONGS_TO, IMPORTS, INHERITS, CALLS)
-  - [x] Neo4j storage layer (graph_store.py — store_nodes, store_edges)
-  - [x] docker-compose.yml with Neo4j container
-  - [x] Ingest pipeline writes to both ChromaDB and Neo4j
-  - [x] Graph-enhanced RAG (get_neighbors, expand query results via graph)
-  - [ ] Impact query CLI command (get_impact, impact command)
+- [ ] Cycle 4 — Markdown and README Doc Ingestion
 
 ---
 
@@ -34,7 +29,7 @@
 |---|---|---|
 | 1 | One file, AST parse, ChromaDB, Ollama, RAG CLI | **Complete** |
 | 2 | Repo walker, batch ingest, 3-mode CLI | **Complete** |
-| 3 | Neo4j graph, nodes + edges, graph-enhanced RAG | **In Progress** |
+| 3 | Neo4j graph, nodes + edges, graph-enhanced RAG | **Complete** |
 | 4 | Markdown / README doc ingestion | Not started |
 | 5 | Web URL crawler (requests + BeautifulSoup) | Not started |
 | 6 | Multi-team registration + isolation proof | Not started |

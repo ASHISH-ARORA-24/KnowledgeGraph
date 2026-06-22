@@ -39,7 +39,7 @@ from src.enrichment.embedder import _build_text, embed_nodes
 ])
 def test_build_text(name, docstring, raw_source, expected):
     node = CodeNode(
-        node_id="x", team_id="t", type="FUNCTION", name=name,
+        node_id="x", team_id="t", project_id="p", type="FUNCTION", name=name,
         file_path="f.py", line_start=1, line_end=5,
         docstring=docstring, raw_source=raw_source,
     )
@@ -60,7 +60,7 @@ def test_embed_nodes_returns_one_result_per_node(sample_node):
 def test_embed_nodes_multiple_nodes_returns_correct_count():
     nodes = [
         CodeNode(
-            node_id=f"id{i}", team_id="team-alpha", type="FUNCTION",
+            node_id=f"id{i}", team_id="team-alpha", project_id="payment-service", type="FUNCTION",
             name=f"func_{i}", file_path="f.py", line_start=i, line_end=i + 5,
             docstring=f"doc {i}", raw_source=f"def func_{i}(): pass",
         )
@@ -76,7 +76,7 @@ def test_embed_nodes_multiple_nodes_returns_correct_count():
 # embed_nodes — output structure
 # ---------------------------------------------------------------------------
 
-EXPECTED_KEYS = {"node_id", "vector", "team_id", "name", "type", "file_path", "docstring"}
+EXPECTED_KEYS = {"node_id", "vector", "team_id", "project_id", "name", "type", "file_path", "docstring"}
 
 def test_embed_nodes_output_has_correct_keys(sample_node):
     fake_vector = np.array([0.1, 0.2, 0.3])
@@ -89,7 +89,7 @@ def test_embed_nodes_output_has_correct_keys(sample_node):
 # embed_nodes — metadata is preserved from the input node
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("field", ["node_id", "team_id", "name", "type", "file_path", "docstring"])
+@pytest.mark.parametrize("field", ["node_id", "team_id", "project_id", "name", "type", "file_path", "docstring"])
 def test_embed_nodes_preserves_metadata_field(sample_node, field):
     fake_vector = np.array([0.1, 0.2, 0.3])
     with patch("src.enrichment.embedder.model.encode", return_value=[fake_vector]):
@@ -111,7 +111,7 @@ def test_embed_nodes_attaches_vector(sample_node):
 def test_embed_nodes_each_node_gets_its_own_vector():
     nodes = [
         CodeNode(
-            node_id=f"id{i}", team_id="team-alpha", type="FUNCTION",
+            node_id=f"id{i}", team_id="team-alpha", project_id="payment-service", type="FUNCTION",
             name=f"func_{i}", file_path="f.py", line_start=i, line_end=i + 5,
             docstring="", raw_source="",
         )

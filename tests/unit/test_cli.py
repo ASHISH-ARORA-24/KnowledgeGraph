@@ -20,7 +20,7 @@ from src.parsers.ast_parser import CodeNode
 
 def _sample_node():
     return CodeNode(
-        node_id="id1", team_id="team-alpha", type="FUNCTION",
+        node_id="id1", team_id="team-alpha", project_id="payment-service", type="FUNCTION",
         name="calculate_tax", file_path="src/billing.py",
         line_start=1, line_end=5,
         docstring="Calculates tax.", raw_source="def calculate_tax(): pass",
@@ -53,7 +53,7 @@ def test_ingest_calls_parse_file_with_correct_args(runner):
          patch("src.cli.store_nodes"), \
          patch("src.cli.store_edges"):
         runner.invoke(cli, ["ingest", "--team", "team-alpha", "--file", "src/billing.py"])
-    mock_parse.assert_called_once_with("src/billing.py", "team-alpha")
+    mock_parse.assert_called_once_with("src/billing.py", "team-alpha", "default")
 
 
 def test_ingest_passes_parsed_nodes_to_store(runner):

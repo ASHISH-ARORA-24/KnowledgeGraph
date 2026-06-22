@@ -59,3 +59,7 @@
 | 2026-06-21 | Unit tests added for all Cycle 1 modules | 97 tests covering ast_parser, embedder, vector_store, ollama_client, cli |
 | 2026-06-21 | Neo4j driver wired into ingest pipeline | Both ChromaDB and Neo4j are written on every ingest; docker-compose.yml provides the container |
 | 2026-06-21 | Integration tests added for graph_store | 16 tests hit real Neo4j; fail immediately with clear message if Neo4j is not running |
+| 2026-06-22 | Add `project_id` to all nodes and edges | Teams can have multiple microservices; project_id enables filtering within a team |
+| 2026-06-22 | Team config restructured — `data` array replaces flat `repos` list | Each project now has its own `project_name`, `repos`, and typed `doc_sources` |
+| 2026-06-22 | `doc_sources` use typed entries (`type`, `path`/`url`) | Different source types (local, web, confluence, wikipedia) need different crawlers |
+| 2026-06-22 | Add Makefile with service management commands | Single place for all dev ops commands — start, stop, restart, status, clean |

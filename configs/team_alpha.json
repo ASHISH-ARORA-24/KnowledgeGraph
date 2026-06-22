@@ -2,11 +2,34 @@
   "team_id": "team-alpha",
   "name": "Alpha Team",
   "users": ["alice", "bob"],
-  "repos": [
-    "data/team-alpha/repos/payment-service",
-    "data/team-alpha/repos/order-service"
-  ],
-  "doc_sources": [
-    "data/team-alpha/docs"
+  "data": [
+    {
+      "project_name": "payment-service",
+      "repos": ["data/team-alpha/repos/payment-service"],
+      "doc_sources": [
+        {
+          "type": "local",
+          "path": "data/team-alpha/docs/payment-service"
+        },
+        {
+          "type": "confluence",
+          "url": "https://confluence.company.com/space/PAYMENT"
+        }
+      ]
+    },
+    {
+      "project_name": "order-service",
+      "repos": ["data/team-alpha/repos/order-service"],
+      "doc_sources": [
+        {
+          "type": "local",
+          "path": "data/team-alpha/docs/order-service"
+        },
+        {
+          "type": "wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Order_management_system"
+        }
+      ]
+    }
   ]
 }

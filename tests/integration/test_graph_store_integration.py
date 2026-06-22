@@ -71,6 +71,7 @@ def _node(name: str, node_type: str = "FUNCTION", node_id: str = None) -> CodeNo
     return CodeNode(
         node_id=node_id or f"test-id-{name}",
         team_id=TEST_TEAM,
+        project_id="test-project",
         type=node_type,
         name=name,
         file_path="test_module.py",
@@ -83,7 +84,7 @@ def _node(name: str, node_type: str = "FUNCTION", node_id: str = None) -> CodeNo
 
 def _edge(from_id: str, to_id: str, rel_type: str) -> Edge:
     return Edge(from_node_id=from_id, to_node_id=to_id,
-                relation_type=rel_type, team_id=TEST_TEAM)
+                relation_type=rel_type, team_id=TEST_TEAM, project_id="test-project")
 
 
 def _node_count() -> int:
@@ -271,7 +272,7 @@ def test_get_impact_includes_relation_type():
 def test_get_neighbors_does_not_cross_team_boundary():
     """A node from another team must never appear in neighbors."""
     other_team_node = CodeNode(
-        node_id="id-other", team_id="other-team", type="FUNCTION",
+        node_id="id-other", team_id="other-team", project_id="test-project", type="FUNCTION",
         name="other_func", file_path="other.py",
         line_start=1, line_end=5,
         docstring="", raw_source="def other_func(): pass",
@@ -289,7 +290,7 @@ def test_get_neighbors_does_not_cross_team_boundary():
 
 def test_get_impact_does_not_cross_team_boundary():
     other_caller = CodeNode(
-        node_id="id-other-caller", team_id="other-team", type="FUNCTION",
+        node_id="id-other-caller", team_id="other-team", project_id="test-project", type="FUNCTION",
         name="other_caller", file_path="other.py",
         line_start=1, line_end=5,
         docstring="", raw_source="def other_caller(): pass",

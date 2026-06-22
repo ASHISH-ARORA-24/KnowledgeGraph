@@ -9,13 +9,14 @@ import pytest
 from src.parsers.ast_parser import parse_file, Edge
 
 
-TEAM = "team-alpha"
+TEAM    = "team-alpha"
+PROJECT = "payment-service"
 
 
 def _edges(source: str, tmp_path) -> list[Edge]:
     f = tmp_path / "module.py"
     f.write_text(source)
-    _, edges = parse_file(str(f), TEAM)
+    _, edges = parse_file(str(f), TEAM, PROJECT)
     return edges
 
 
@@ -53,7 +54,7 @@ def test_defined_in_count_matches_non_module_nodes(tmp_path):
     source = "class Foo:\n    pass\n\ndef bar():\n    pass\n"
     f = tmp_path / "module.py"
     f.write_text(source)
-    nodes, edges = parse_file(str(f), TEAM)
+    nodes, edges = parse_file(str(f), TEAM, PROJECT)
     non_module_count = sum(1 for n in nodes if n.type != "MODULE")
     defined_in_count = sum(1 for e in edges if e.relation_type == "DEFINED_IN")
     assert defined_in_count == non_module_count
@@ -63,7 +64,7 @@ def test_no_defined_in_for_module_itself(tmp_path):
     source = '"""module docstring."""\n'
     f = tmp_path / "module.py"
     f.write_text(source)
-    nodes, edges = parse_file(str(f), TEAM)
+    nodes, edges = parse_file(str(f), TEAM, PROJECT)
     module_node = next(n for n in nodes if n.type == "MODULE")
     for e in edges:
         if e.relation_type == "DEFINED_IN":
@@ -88,7 +89,7 @@ def test_belongs_to_count_matches_method_count(tmp_path):
     )
     f = tmp_path / "module.py"
     f.write_text(source)
-    nodes, edges = parse_file(str(f), TEAM)
+    nodes, edges = parse_file(str(f), TEAM, PROJECT)
     method_count = sum(1 for n in nodes if n.type == "FUNCTION" and n.parent_name)
     belongs_to_count = sum(1 for e in edges if e.relation_type == "BELONGS_TO")
     assert belongs_to_count == method_count
@@ -165,7 +166,7 @@ def test_no_self_calls_edge(tmp_path):
     )
     f = tmp_path / "module.py"
     f.write_text(source)
-    nodes, edges = parse_file(str(f), TEAM)
+    nodes, edges = parse_file(str(f), TEAM, PROJECT)
     calls = [e for e in edges if e.relation_type == "CALLS"]
     for e in calls:
         assert e.from_node_id != e.to_node_id

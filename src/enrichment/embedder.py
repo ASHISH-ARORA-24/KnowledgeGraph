@@ -23,12 +23,13 @@ def embed_nodes(nodes: list[CodeNode]) -> list[dict]:
     results = []
     for node, vector in zip(nodes, vectors):
         results.append({
-            "node_id":   node.node_id,
-            "vector":    vector,
-            "team_id":   node.team_id,
-            "name":      node.name,
-            "type":      node.type,
-            "file_path": node.file_path,
-            "docstring": node.docstring,
+            "node_id":    node.node_id,
+            "vector":     vector,
+            "team_id":    node.team_id,
+            "project_id": node.project_id,
+            "name":       node.name,
+            "type":       node.type,
+            "file_path":  node.file_path,
+            "docstring":  node.docstring,
         })
     return results

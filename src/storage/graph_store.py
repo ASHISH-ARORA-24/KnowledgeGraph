@@ -87,6 +87,7 @@ def _write_nodes(tx, nodes: list[CodeNode]) -> None:
     UNWIND $nodes AS n
     MERGE (node:CodeNode {node_id: n.node_id})
     SET node.team_id    = n.team_id,
+        node.project_id = n.project_id,
         node.type       = n.type,
         node.name       = n.name,
         node.file_path  = n.file_path,
@@ -98,6 +99,7 @@ def _write_nodes(tx, nodes: list[CodeNode]) -> None:
     tx.run(query, nodes=[{
         "node_id":    n.node_id,
         "team_id":    n.team_id,
+        "project_id": n.project_id,
         "type":       n.type,
         "name":       n.name,
         "file_path":  n.file_path,
@@ -127,6 +129,7 @@ def _write_edges(tx, edges: list[Edge]) -> None:
             "from_node_id": e.from_node_id,
             "to_node_id":   e.to_node_id,
             "team_id":      e.team_id,
+            "project_id":   e.project_id,
         } for e in group])
 
 

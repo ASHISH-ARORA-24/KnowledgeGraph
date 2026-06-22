@@ -18,6 +18,7 @@ class CodeNode:
     """A single extracted unit from a Python file."""
     node_id: str
     team_id: str
+    project_id: str    # microservice / repo name (e.g. "payment-service")
     type: str          # MODULE | CLASS | FUNCTION
     name: str
     file_path: str
@@ -35,11 +36,12 @@ class Edge:
     to_node_id: str
     relation_type: str  # IMPORTS | CALLS | DEFINED_IN | BELONGS_TO | INHERITS
     team_id: str
+    project_id: str
 
 
-def _make_id(team_id: str, file_path: str, node_type: str, name: str) -> str:
-    """Generate a stable MD5 node ID from team, file path, node type, and name."""
-    key = f"{team_id}::{file_path}::{node_type}::{name}"
+def _make_id(team_id: str, project_id: str, file_path: str, node_type: str, name: str) -> str:
+    """Generate a stable MD5 node ID from team, project, file path, node type, and name."""
+    key = f"{team_id}::{project_id}::{file_path}::{node_type}::{name}"
     return hashlib.md5(key.encode()).hexdigest()
 
 
@@ -89,6 +91,7 @@ def _extract_edges(
     tree: ast.AST,
     source_file: str,
     team_id: str,
+    project_id: str,
     nodes: list[CodeNode],
 ) -> list[Edge]:
     """
@@ -111,7 +114,7 @@ def _extract_edges(
         key = (from_id, to_id, rel_type)
         if key not in seen:
             seen.add(key)
-            edges.append(Edge(from_id, to_id, rel_type, team_id))
+            edges.append(Edge(from_id, to_id, rel_type, team_id, project_id))
 
     # Build lookup registries
     module_node  = next((n for n in nodes if n.type == "MODULE"), None)
@@ -153,7 +156,7 @@ def _extract_edges(
                 )
                 if target_file:
                     target_id = _make_id(
-                        team_id, target_file, "MODULE", Path(target_file).stem
+                        team_id, project_id, target_file, "MODULE", Path(target_file).stem
                     )
                     add_edge(module_node.node_id, target_id, "IMPORTS")
 
@@ -226,7 +229,7 @@ def _extract_edges(
     return edges
 
 
-def parse_file(file_path: str, team_id: str) -> tuple[list[CodeNode], list[Edge]]:
+def parse_file(file_path: str, team_id: str, project_id: str) -> tuple[list[CodeNode], list[Edge]]:
     """
     Parse a single Python file and return CodeNodes and Edges.
     One CodeNode per: module, class, top-level function, method.
@@ -246,8 +249,9 @@ def parse_file(file_path: str, team_id: str) -> tuple[list[CodeNode], list[Edge]
     # Module-level node
     module_docstring = ast.get_docstring(tree) or ""
     module_node = CodeNode(
-        node_id=_make_id(team_id, file_path, "MODULE", path.stem),
+        node_id=_make_id(team_id, project_id, file_path, "MODULE", path.stem),
         team_id=team_id,
+        project_id=project_id,
         type="MODULE",
         name=path.stem,
         file_path=file_path,
@@ -266,8 +270,9 @@ def parse_file(file_path: str, team_id: str) -> tuple[list[CodeNode], list[Edge]
                 for child in ast.walk(node)
             )
             class_node = CodeNode(
-                node_id=_make_id(team_id, file_path, "CLASS", node.name),
+                node_id=_make_id(team_id, project_id, file_path, "CLASS", node.name),
                 team_id=team_id,
+                project_id=project_id,
                 type="CLASS",
                 name=node.name,
                 file_path=file_path,
@@ -287,10 +292,11 @@ def parse_file(file_path: str, team_id: str) -> tuple[list[CodeNode], list[Edge]
                     )
                     method_node = CodeNode(
                         node_id=_make_id(
-                            team_id, file_path, "FUNCTION",
+                            team_id, project_id, file_path, "FUNCTION",
                             f"{node.name}.{item.name}"
                         ),
                         team_id=team_id,
+                        project_id=project_id,
                         type="FUNCTION",
                         name=f"{node.name}.{item.name}",
                         file_path=file_path,
@@ -316,8 +322,9 @@ def parse_file(file_path: str, team_id: str) -> tuple[list[CodeNode], list[Edge]
                     for child in ast.walk(node)
                 )
                 func_node = CodeNode(
-                    node_id=_make_id(team_id, file_path, "FUNCTION", node.name),
+                    node_id=_make_id(team_id, project_id, file_path, "FUNCTION", node.name),
                     team_id=team_id,
+                    project_id=project_id,
                     type="FUNCTION",
                     name=node.name,
                     file_path=file_path,
@@ -330,5 +337,5 @@ def parse_file(file_path: str, team_id: str) -> tuple[list[CodeNode], list[Edge]
                 )
                 nodes.append(func_node)
 
-    edges = _extract_edges(tree, file_path, team_id, nodes)
+    edges = _extract_edges(tree, file_path, team_id, project_id, nodes)
     return nodes, edges

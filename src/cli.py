@@ -23,11 +23,12 @@ def cli():
 
 
 @cli.command()
-@click.option("--team",    help="Team ID (required for --file and --project)")
-@click.option("--file",    "file_path",    help="Ingest a single Python file")
-@click.option("--project", "project_path", help="Ingest all .py files in a directory")
-@click.option("--config",  "config_path",  type=click.Path(exists=True), help="Team config JSON (reads team_id and repos list)")
-def ingest(team, file_path, project_path, config_path):
+@click.option("--team",       help="Team ID (required for --file and --project)")
+@click.option("--project-id", "project_id", default="default", help="Project / microservice name")
+@click.option("--file",       "file_path",    help="Ingest a single Python file")
+@click.option("--project",    "project_path", help="Ingest all .py files in a directory")
+@click.option("--config",     "config_path",  type=click.Path(exists=True), help="Team config JSON")
+def ingest(team, project_id, file_path, project_path, config_path):
     """Ingest Python source code into the team's ChromaDB collection.
 
     \b
@@ -37,10 +38,10 @@ def ingest(team, file_path, project_path, config_path):
       --config   ingest all repos defined in a team config JSON
     """
     if file_path:
-        _ingest_file(file_path, _require_team(team, "--file"))
+        _ingest_file(file_path, _require_team(team, "--file"), project_id)
 
     elif project_path:
-        _ingest_project(project_path, _require_team(team, "--project"))
+        _ingest_project(project_path, _require_team(team, "--project"), project_id)
 
     elif config_path:
         _ingest_config(config_path)
@@ -105,10 +106,10 @@ def _require_team(team: str, flag: str) -> str:
     return team
 
 
-def _ingest_file(file_path: str, team_id: str) -> None:
+def _ingest_file(file_path: str, team_id: str, project_id: str) -> None:
     """Parse a single file and store its nodes and edges."""
     click.echo(f"Parsing {file_path}...")
-    nodes, edges = parse_file(file_path, team_id)
+    nodes, edges = parse_file(file_path, team_id, project_id)
     click.echo(f"  Found {len(nodes)} nodes, {len(edges)} edges")
 
     click.echo("  Storing in ChromaDB...")
@@ -119,7 +120,7 @@ def _ingest_file(file_path: str, team_id: str) -> None:
     store_edges(edges)
 
 
-def _ingest_project(project_path: str, team_id: str) -> None:
+def _ingest_project(project_path: str, team_id: str, project_id: str) -> None:
     """Walk a directory, parse every .py file, batch embed and store all nodes and edges."""
     click.echo(f"Walking {project_path}...")
     py_files = walk_repo(project_path)
@@ -129,7 +130,7 @@ def _ingest_project(project_path: str, team_id: str) -> None:
     all_edges = []
     for file_path in py_files:
         click.echo(f"  Parsing {file_path}...")
-        nodes, edges = parse_file(file_path, team_id)
+        nodes, edges = parse_file(file_path, team_id, project_id)
         click.echo(f"    {len(nodes)} nodes, {len(edges)} edges")
         all_nodes.extend(nodes)
         all_edges.extend(edges)
@@ -143,19 +144,23 @@ def _ingest_project(project_path: str, team_id: str) -> None:
 
 
 def _ingest_config(config_path: str) -> None:
-    """Read a team config JSON and ingest every repo listed in it."""
+    """Read a team config JSON and ingest every project listed in it."""
     with open(config_path) as f:
         config = json.load(f)
 
-    team_id = config["team_id"]
-    repos   = config.get("repos", [])
+    team_id  = config["team_id"]
+    projects = config.get("data", [])
 
     click.echo(f"Team     : {team_id}")
-    click.echo(f"Repos    : {len(repos)}")
+    click.echo(f"Projects : {len(projects)}")
 
-    for repo_path in repos:
-        click.echo(f"\nIngesting repo: {repo_path}")
-        _ingest_project(repo_path, team_id)
+    for project in projects:
+        project_id = project["project_name"]
+        repos      = project.get("repos", [])
+        click.echo(f"\nProject  : {project_id} ({len(repos)} repo(s))")
+        for repo_path in repos:
+            click.echo(f"  Ingesting repo: {repo_path}")
+            _ingest_project(repo_path, team_id, project_id)
 
 
 if __name__ == "__main__":

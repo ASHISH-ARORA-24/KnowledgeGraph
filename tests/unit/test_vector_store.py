@@ -19,7 +19,7 @@ from src.storage.vector_store import store, search
 
 def _make_node(i=0, team_id="team-alpha"):
     return CodeNode(
-        node_id=f"id{i}", team_id=team_id, type="FUNCTION",
+        node_id=f"id{i}", team_id=team_id, project_id="payment-service", type="FUNCTION",
         name=f"func_{i}", file_path="f.py", line_start=i, line_end=i + 5,
         docstring=f"doc {i}", raw_source=f"def func_{i}(): pass",
     )
@@ -27,13 +27,14 @@ def _make_node(i=0, team_id="team-alpha"):
 
 def _fake_embedded(node):
     return {
-        "node_id":   node.node_id,
-        "vector":    np.array([0.1, 0.2, 0.3]),
-        "team_id":   node.team_id,
-        "name":      node.name,
-        "type":      node.type,
-        "file_path": node.file_path,
-        "docstring": node.docstring,
+        "node_id":    node.node_id,
+        "vector":     np.array([0.1, 0.2, 0.3]),
+        "team_id":    node.team_id,
+        "project_id": node.project_id,
+        "name":       node.name,
+        "type":       node.type,
+        "file_path":  node.file_path,
+        "docstring":  node.docstring,
     }
 
 
@@ -116,7 +117,7 @@ def test_store_passes_docstrings_as_documents():
     assert kwargs["documents"] == [node.docstring]
 
 
-@pytest.mark.parametrize("field", ["team_id", "name", "type", "file_path", "docstring"])
+@pytest.mark.parametrize("field", ["team_id", "project_id", "name", "type", "file_path", "docstring"])
 def test_store_metadata_contains_field(field):
     node = _make_node()
     mock_client = MagicMock()

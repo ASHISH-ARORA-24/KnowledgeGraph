@@ -19,6 +19,7 @@ def _sample_node(name="calculate_tax", node_type="FUNCTION"):
     return CodeNode(
         node_id="abc123",
         team_id="team-alpha",
+        project_id="payment-service",
         type=node_type,
         name=name,
         file_path="processors.py",
@@ -35,6 +36,7 @@ def _sample_edge():
         to_node_id="def456",
         relation_type="CALLS",
         team_id="team-alpha",
+        project_id="payment-service",
     )
 
 

@@ -23,11 +23,12 @@ def store(nodes: list[CodeNode], team_id: str) -> None:
         embeddings=[e["vector"].tolist() for e in embedded],
         metadatas=[
             {
-                "team_id":   e["team_id"],
-                "name":      e["name"],
-                "type":      e["type"],
-                "file_path": e["file_path"],
-                "docstring": e["docstring"],
+                "team_id":    e["team_id"],
+                "project_id": e["project_id"],
+                "name":       e["name"],
+                "type":       e["type"],
+                "file_path":  e["file_path"],
+                "docstring":  e["docstring"],
             }
             for e in embedded
         ],

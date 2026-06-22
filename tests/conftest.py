@@ -8,6 +8,7 @@ def sample_node():
     return CodeNode(
         node_id="abc123",
         team_id="team-alpha",
+        project_id="payment-service",
         type="FUNCTION",
         name="calculate_tax",
         file_path="src/billing.py",
